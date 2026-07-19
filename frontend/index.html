@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Checkpoint — Air-Writing Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #10131A;
+    --panel: #171B24;
+    --panel-border: #262C3A;
+    --text-primary: #ECEFF4;
+    --text-secondary: #8891A3;
+    --text-dim: #565E70;
+    --accent: #4FD8C4;
+    --accent-dim: #2C7A6E;
+    --error: #F2735A;
+    --success: #4FD8C4;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 216, 196, 0.05), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(79, 216, 196, 0.04), transparent 40%);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-primary);
+    padding: 24px;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 28px 26px 24px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  h1 {
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0 0 20px;
+    color: var(--text-primary);
+  }
+
+  /* Scan reticle frame around the captcha image */
+  .scan-frame {
+    position: relative;
+    border-radius: 10px;
+    padding: 14px;
+    background: #0C0F15;
+    border: 1px solid var(--panel-border);
+    margin-bottom: 16px;
+  }
+
+  .scan-frame::before, .scan-frame::after,
+  .corner-tl, .corner-br {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--accent);
+  }
+  .scan-frame::before { top: -1px; left: -1px; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+  .scan-frame::after { bottom: -1px; right: -1px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
+  .corner-tl { top: -1px; right: -1px; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; }
+  .corner-br { bottom: -1px; left: -1px; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
+
+  #captcha-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 110px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #0C0F15;
+  }
+
+  #captcha-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+
+  #captcha-loading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .frame-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  input#manual-input {
+    flex: 1;
+    background: #0C0F15;
+    border: 1px solid var(--panel-border);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 11px 10px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input#manual-input:focus { border-color: var(--accent); }
+
+  button {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  button:active { transform: scale(0.98); }
+
+  #enter-btn {
+    background: var(--accent);
+    color: #06231F;
+    padding: 0 18px;
+  }
+  #enter-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #refresh-btn {
+    width: 100%;
+    margin-top: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--panel-border);
+    padding: 9px;
+  }
+  #refresh-btn:hover { border-color: var(--text-dim); color: var(--text-primary); }
+
+  #status {
+    margin-top: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #status::before { content: ">"; color: var(--text-dim); }
+  #status.success { color: var(--success); }
+  #status.error { color: var(--error); }
+  #status.neutral { color: var(--text-dim); }
+
+  .footnote {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--panel-border);
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+  <div class="panel">
+    <p class="eyebrow">Checkpoint · Phase 1</p>
+    <h1>Verify you're human</h1>
+
+    <div class="scan-frame">
+      <span class="corner-tl"></span><span class="corner-br"></span>
+      <div id="captcha-slot">
+        <span id="captcha-loading">loading captcha&hellip;</span>
+      </div>
+    </div>
+    <p class="frame-caption">Read the distorted characters above</p>
+
+    <!--
+      Phase 1 placeholder input. Phases 2-4 replace this text field with
+      the camera view + air-writing trace overlay; "Enter CAPTCHA" will
+      open the camera instead of submitting typed text.
+    -->
+    <div class="row">
+      <input id="manual-input" placeholder="TYPE HERE" maxlength="8" autocomplete="off" />
+      <button id="enter-btn">Enter</button>
+    </div>
+    <button id="refresh-btn">↻ New captcha</button>
+
+    <div id="status" class="neutral" style="visibility:hidden;">ready</div>
+
+    <p class="footnote">
+      This build uses typed text as a placeholder for verification.
+      Camera-based air-writing input replaces it in later phases.
+    </p>
+  </div>
+
+<script>
+// Same-origin now: frontend is served by the FastAPI app itself, so this
+// can be a relative path. No CORS, no separate "is the backend running"
+// mismatch between two ports.
+const API_BASE = "";
+
+let currentSessionId = null;
+
+function setStatus(text, kind) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = kind;
+  el.style.visibility = "visible";
+}
+
+async function loadCaptcha() {
+  const slot = document.getElementById("captcha-slot");
+  slot.innerHTML = '<span id="captcha-loading">loading captcha&hellip;</span>';
+  document.getElementById("manual-input").value = "";
+  document.getElementById("status").style.visibility = "hidden";
+
+  try {
+    const res = await fetch(`${API_BASE}/api/captcha`);
+    if (!res.ok) {
+      throw new Error(`Server responded ${res.status}`);
+    }
+    const data = await res.json();
+    currentSessionId = data.session_id;
+
+    const img = document.createElement("img");
+    img.id = "captcha-img";
+    img.alt = "captcha";
+    img.src = `data:image/png;base64,${data.image_base64}`;
+    slot.innerHTML = "";
+    slot.appendChild(img);
+  } catch (err) {
+    slot.innerHTML = '<span id="captcha-loading" style="color:#F2735A;">failed to load</span>';
+    setStatus(
+      "Can't reach the backend. Is uvicorn running on this port?",
+      "error"
+    );
+    console.error("loadCaptcha error:", err);
+  }
+}
+
+async function submitCaptcha() {
+  const text = document.getElementById("manual-input").value.trim();
+
+  if (!text) {
+    setStatus("Enter the captcha text first.", "error");
+    return;
+  }
+  if (!currentSessionId) {
+    setStatus("No active session — refreshing.", "error");
+    await loadCaptcha();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: currentSessionId, text }),
+    });
+
+    if (res.status === 429 || res.status === 400) {
+      const err = await res.json();
+      setStatus(err.detail || "Session expired — refresh.", "error");
+      await loadCaptcha();
+      return;
+    }
+
+    const data = await res.json();
+    if (data.success) {
+      setStatus("Verified.", "success");
+    } else {
+      setStatus(`Incorrect. Attempts remaining: ${data.attempts_remaining}`, "error");
+    }
+  } catch (err) {
+    setStatus("Request failed — check the backend is running.", "error");
+    console.error("submitCaptcha error:", err);
+  }
+}
+
+document.getElementById("refresh-btn").addEventListener("click", loadCaptcha);
+document.getElementById("enter-btn").addEventListener("click", submitCaptcha);
+document.getElementById("manual-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submitCaptcha();
+});
+
+loadCaptcha();
+</script>
+</body>
+</html>
